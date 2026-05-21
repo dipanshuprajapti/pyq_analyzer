@@ -1,0 +1,2490 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PYQ Analyzer — Smart Exam Prep</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap"
+        rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --bg2: #13131a;
+            --bg3: #1c1c27;
+            --border: rgba(255, 255, 255, 0.08);
+            --border2: rgba(255, 255, 255, 0.15);
+            --text: #f0f0f5;
+            --muted: #8888a0;
+            --accent: #ff6b35;
+            --accent2: #ffaa00;
+            --green: #2dce7a;
+            --red: #ff4757;
+            --blue: #4a9eff;
+            --font-head: 'Syne', sans-serif;
+            --font-body: 'DM Sans', sans-serif;
+            --radius: 14px;
+            --radius-sm: 8px;
+        }
+
+        /* AMBIENT GLOWS */
+        .glow-1 {
+            position: fixed;
+            top: -10%;
+            left: -10%;
+            width: 45vw;
+            height: 45vw;
+            background: radial-gradient(circle, rgba(255, 107, 53, 0.06) 0%, transparent 70%);
+            z-index: 0;
+            pointer-events: none;
+            filter: blur(80px);
+        }
+
+        .glow-2 {
+            position: fixed;
+            bottom: -10%;
+            right: -10%;
+            width: 40vw;
+            height: 40vw;
+            background: radial-gradient(circle, rgba(74, 158, 255, 0.05) 0%, transparent 70%);
+            z-index: 0;
+            pointer-events: none;
+            filter: blur(80px);
+        }
+
+
+
+        /* STUDY SHORTCUT BUTTONS */
+        .study-btn-group {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .study-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 5px 12px;
+            border-radius: 12px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            font-family: var(--font-body);
+        }
+
+        .study-btn.yt {
+            background: rgba(255, 71, 87, 0.08);
+            color: var(--red);
+            border: 1px solid rgba(255, 71, 87, 0.15);
+        }
+
+        .study-btn.yt:hover {
+            background: var(--red);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(255, 71, 87, 0.25);
+            transform: translateY(-1px);
+        }
+
+        .study-btn.gg {
+            background: rgba(74, 158, 255, 0.08);
+            color: var(--blue);
+            border: 1px solid rgba(74, 158, 255, 0.15);
+        }
+
+        .study-btn.gg:hover {
+            background: var(--blue);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(74, 158, 255, 0.25);
+            transform: translateY(-1px);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font-body);
+            font-size: 15px;
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* NOISE TEXTURE */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* NAV */
+        nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.2rem 2rem;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            background: rgba(10, 10, 15, 0.85);
+            backdrop-filter: blur(12px);
+            z-index: 100;
+        }
+
+        .logo {
+            font-family: var(--font-head);
+            font-size: 1.3rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+
+        .logo span {
+            color: var(--accent);
+        }
+
+        .nav-badge {
+            font-size: 11px;
+            padding: 3px 10px;
+            background: rgba(255, 107, 53, 0.15);
+            color: var(--accent);
+            border: 1px solid rgba(255, 107, 53, 0.3);
+            border-radius: 20px;
+            font-weight: 500;
+        }
+
+        /* HERO */
+        .hero {
+            padding: 5rem 2rem 3rem;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-tag {
+            display: inline-block;
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--accent);
+            background: rgba(255, 107, 53, 0.1);
+            border: 1px solid rgba(255, 107, 53, 0.2);
+            border-radius: 20px;
+            padding: 5px 16px;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero h1 {
+            font-family: var(--font-head);
+            font-size: clamp(2.4rem, 6vw, 4rem);
+            font-weight: 800;
+            line-height: 1.1;
+            letter-spacing: -0.03em;
+            margin-bottom: 1rem;
+        }
+
+        .hero h1 em {
+            font-style: normal;
+            color: var(--accent);
+        }
+
+        .hero p {
+            color: var(--muted);
+            font-size: 1.05rem;
+            max-width: 520px;
+            margin: 0 auto 2.5rem;
+        }
+
+        /* MAIN CONTAINER */
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 0 1.5rem 4rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* CARDS */
+        .card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 107, 53, 0.2);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(255, 107, 53, 0.02);
+        }
+
+        .card-title {
+            font-family: var(--font-head);
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title .icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: rgba(255, 107, 53, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        /* STEP INDICATOR */
+        .steps {
+            display: flex;
+            gap: 0;
+            margin-bottom: 2rem;
+        }
+
+        .step-item {
+            flex: 1;
+            text-align: center;
+            padding: 10px 4px;
+            border-bottom: 2px solid var(--border);
+            font-size: 12px;
+            color: var(--muted);
+            transition: all 0.3s;
+            cursor: default;
+        }
+
+        .step-item.active {
+            border-color: var(--accent);
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .step-item.done {
+            border-color: var(--green);
+            color: var(--green);
+        }
+
+        .step-num {
+            display: block;
+            font-family: var(--font-head);
+            font-size: 1.1rem;
+            font-weight: 800;
+            margin-bottom: 2px;
+        }
+
+        /* UPLOAD ZONES */
+        .upload-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 1rem;
+        }
+
+        .upload-zone {
+            border: 1.5px dashed var(--border2);
+            border-radius: var(--radius-sm);
+            padding: 1.2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.25s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--accent);
+            background: rgba(255, 107, 53, 0.04);
+        }
+
+        .upload-zone.has-file {
+            border-color: var(--green);
+            border-style: solid;
+            background: rgba(45, 206, 122, 0.05);
+        }
+
+        .upload-zone.has-text {
+            border-color: var(--blue);
+            border-style: solid;
+            background: rgba(74, 158, 255, 0.05);
+        }
+
+        .upload-zone input[type=file] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .upload-year {
+            font-family: var(--font-head);
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+
+        .upload-zone.has-file .upload-year,
+        .upload-zone.has-text .upload-year {
+            color: var(--text);
+        }
+
+        .upload-label {
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .upload-status {
+            font-size: 12px;
+            margin-top: 6px;
+        }
+
+        .upload-status.ok {
+            color: var(--green);
+        }
+
+        .upload-status.blue {
+            color: var(--blue);
+        }
+
+        /* TEXT INPUT TOGGLE */
+        .input-toggle {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 1rem;
+        }
+
+        .toggle-btn {
+            padding: 6px 14px;
+            font-size: 12px;
+            border-radius: 20px;
+            border: 1px solid var(--border2);
+            cursor: pointer;
+            background: transparent;
+            color: var(--muted);
+            font-family: var(--font-body);
+            transition: all 0.2s;
+        }
+
+        .toggle-btn.active {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+
+        /* TEXT AREAS */
+        .text-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 1rem;
+        }
+
+        .text-area-wrap label {
+            display: block;
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        textarea {
+            width: 100%;
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-family: var(--font-body);
+            font-size: 13px;
+            padding: 10px 12px;
+            resize: vertical;
+            min-height: 120px;
+            transition: border-color 0.2s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        textarea::placeholder {
+            color: var(--muted);
+        }
+
+        /* INPUTS */
+        .meta-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 1.2rem;
+        }
+
+        .meta-field {
+            flex: 1;
+            min-width: 160px;
+        }
+
+        .meta-field label {
+            display: block;
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        input[type=text] {
+            width: 100%;
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-family: var(--font-body);
+            font-size: 14px;
+            padding: 9px 12px;
+            transition: border-color 0.2s;
+        }
+
+        input[type=text]:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        input[type=text]::placeholder {
+            color: var(--muted);
+        }
+
+        /* BUTTONS */
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 28px;
+            background: var(--accent);
+            color: #fff;
+            font-family: var(--font-head);
+            font-size: 0.95rem;
+            font-weight: 700;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 0.01em;
+        }
+
+        .btn-primary:hover {
+            background: #e55a25;
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: transparent;
+            color: var(--muted);
+            font-family: var(--font-body);
+            font-size: 0.875rem;
+            border: 1px solid var(--border2);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover {
+            color: var(--text);
+            border-color: var(--text);
+        }
+
+        /* LOADING */
+        .loading-wrap {
+            text-align: center;
+            padding: 4rem 1rem;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--border2);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 1.5rem;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-msg {
+            font-family: var(--font-head);
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .loading-sub {
+            color: var(--muted);
+            font-size: 0.875rem;
+            margin-top: 6px;
+        }
+
+        /* RESULTS */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+            gap: 10px;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-box {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .stat-n {
+            font-family: var(--font-head);
+            font-size: 2rem;
+            font-weight: 800;
+        }
+
+        .stat-l {
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        /* FILTER TABS */
+        .filter-row {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .filt {
+            padding: 6px 14px;
+            font-size: 12px;
+            border-radius: 20px;
+            border: 1px solid var(--border2);
+            cursor: pointer;
+            background: transparent;
+            color: var(--muted);
+            font-family: var(--font-body);
+            transition: all 0.2s;
+        }
+
+        .filt.on {
+            color: #fff;
+            border-color: transparent;
+        }
+
+        .filt.on.all {
+            background: var(--accent);
+        }
+
+        .filt.on.hot {
+            background: var(--red);
+        }
+
+        .filt.on.likely {
+            background: var(--accent2);
+            color: #000;
+        }
+
+        .filt.on.watch {
+            background: var(--green);
+            color: #000;
+        }
+
+        /* TOPIC ROWS */
+        .topic-section-hd {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--muted);
+            padding: 1rem 0 0.4rem;
+            border-top: 1px solid var(--border);
+            margin-top: 0.5rem;
+        }
+
+        .topic-section-hd:first-child {
+            border-top: none;
+            margin-top: 0;
+        }
+
+        .topic-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto auto;
+            gap: 14px;
+            align-items: start;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .topic-name {
+            font-weight: 500;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .topic-reason {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .topic-ex {
+            font-size: 11px;
+            color: rgba(136, 136, 160, 0.7);
+            margin-top: 4px;
+            font-style: italic;
+        }
+
+        .bar-wrap {
+            height: 4px;
+            background: var(--bg3);
+            border-radius: 2px;
+            margin-top: 7px;
+        }
+
+        .bar-fill {
+            height: 4px;
+            border-radius: 2px;
+            transition: width 0.6s ease;
+        }
+
+        .yr-dots {
+            display: flex;
+            gap: 3px;
+            justify-content: flex-end;
+        }
+
+        .yr-dot {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            font-size: 10px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-head);
+        }
+
+        .yr-on {
+            background: var(--red);
+            color: #fff;
+        }
+
+        .yr-off {
+            background: var(--bg3);
+            color: var(--muted);
+            border: 1px solid var(--border);
+        }
+
+        .badge {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 9px;
+            border-radius: 20px;
+            letter-spacing: 0.04em;
+            font-family: var(--font-head);
+        }
+
+        .badge.HOT {
+            background: rgba(255, 71, 87, 0.15);
+            color: var(--red);
+            border: 1px solid rgba(255, 71, 87, 0.3);
+        }
+
+        .badge.LIKELY {
+            background: rgba(255, 170, 0, 0.15);
+            color: var(--accent2);
+            border: 1px solid rgba(255, 170, 0, 0.3);
+        }
+
+        .badge.WATCH {
+            background: rgba(45, 206, 122, 0.15);
+            color: var(--green);
+            border: 1px solid rgba(45, 206, 122, 0.3);
+        }
+
+        /* CHART SECTION */
+        .chart-wrap {
+            position: relative;
+            width: 100%;
+            height: 280px;
+        }
+
+        /* SUMMARY BOX */
+        .summary-box {
+            background: linear-gradient(135deg, rgba(255, 107, 53, 0.08), rgba(255, 170, 0, 0.05));
+            border: 1px solid rgba(255, 107, 53, 0.2);
+            border-radius: var(--radius-sm);
+            padding: 1rem 1.2rem;
+            font-size: 14px;
+            color: var(--text);
+            margin-top: 1rem;
+            line-height: 1.7;
+        }
+
+        .summary-box strong {
+            color: var(--accent);
+        }
+
+        /* QUICK ACTION BTNS */
+        .quick-btns {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        .qbtn {
+            padding: 8px 14px;
+            font-size: 12px;
+            background: var(--bg3);
+            border: 1px solid var(--border2);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            color: var(--muted);
+            font-family: var(--font-body);
+            transition: all 0.2s;
+        }
+
+        .qbtn:hover {
+            color: var(--text);
+            border-color: var(--accent);
+        }
+
+        /* HIDDEN */
+        .hidden {
+            display: none !important;
+        }
+
+        /* FOOTER */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--muted);
+            font-size: 12px;
+            border-top: 1px solid var(--border);
+            position: relative;
+            z-index: 1;
+        }
+
+        footer span {
+            color: var(--accent);
+        }
+
+        /* ANIMATIONS */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        /* API KEY SECTION */
+        .api-notice {
+            background: rgba(74, 158, 255, 0.08);
+            border: 1px solid rgba(74, 158, 255, 0.2);
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            font-size: 13px;
+            color: #4a9eff;
+            margin-bottom: 1rem;
+        }
+
+        /* MULTI-SUBJECT TABS */
+        .subject-tab {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            color: var(--muted);
+            user-select: none;
+        }
+
+        .subject-tab:hover {
+            border-color: rgba(255, 107, 53, 0.4);
+            color: var(--text);
+        }
+
+        .subject-tab.active {
+            background: rgba(255, 107, 53, 0.12);
+            border-color: var(--accent);
+            color: var(--text);
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.08);
+        }
+
+        .subject-tab .delete-btn {
+            border: none;
+            background: transparent;
+            color: var(--muted);
+            cursor: pointer;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            transition: all 0.2s;
+            margin-left: 4px;
+        }
+
+        .subject-tab .delete-btn:hover {
+            background: rgba(255, 71, 87, 0.2);
+            color: var(--red);
+        }
+
+        /* DIFFICULTY TAGS */
+        .diff-tag {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+            display: inline-block;
+        }
+
+        .diff-tag.diff-easy {
+            background: rgba(45, 206, 122, 0.12);
+            color: var(--green);
+            border: 1px solid rgba(45, 206, 122, 0.2);
+        }
+
+        .diff-tag.diff-medium {
+            background: rgba(255, 170, 0, 0.12);
+            color: var(--accent2);
+            border: 1px solid rgba(255, 170, 0, 0.2);
+        }
+
+        .diff-tag.diff-hard {
+            background: rgba(255, 71, 87, 0.12);
+            color: var(--red);
+            border: 1px solid rgba(255, 71, 87, 0.2);
+        }
+
+        @media (max-width: 600px) {
+            .text-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero {
+                padding: 3rem 1.2rem 2rem;
+            }
+
+            nav {
+                padding: 1rem 1.2rem;
+            }
+        }
+
+        /* UNIT-WISE SECTION */
+        .unit-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-bottom: 1rem;
+        }
+        .unit-card {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 1rem 0.6rem;
+            text-align: center;
+            transition: all 0.25s ease;
+            cursor: pointer;
+        }
+        .unit-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+        }
+        .unit-card.active {
+            border-color: var(--accent);
+            background: rgba(255, 107, 53, 0.08);
+        }
+        .unit-card .unit-num {
+            font-family: var(--font-head);
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--accent);
+        }
+        .unit-card .unit-name {
+            font-size: 11px;
+            color: var(--text);
+            font-weight: 600;
+            margin: 4px 0;
+            min-height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .unit-card .unit-meta {
+            font-size: 10px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+        .unit-imp-HIGH { border-left: 3px solid var(--red); }
+        .unit-imp-MEDIUM { border-left: 3px solid var(--accent2); }
+        .unit-imp-LOW { border-left: 3px solid var(--green); }
+        .unit-tip {
+            font-size: 12px;
+            color: var(--muted);
+            padding: 8px 12px;
+            background: rgba(255,107,53,0.04);
+            border-radius: var(--radius-sm);
+            margin-top: 0.5rem;
+            border-left: 3px solid var(--accent);
+        }
+        @media (max-width: 600px) {
+            .unit-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- BACKGROUND GLOW EFFECTS -->
+    <div class="glow-1"></div>
+    <div class="glow-2"></div>
+
+    <nav>
+        <div class="logo">PYQ<span>Analyzer</span></div>
+        <span class="nav-badge">AI Powered</span>
+    </nav>
+
+    <div class="hero">
+        <div class="hero-tag">Smart Exam Prep Tool</div>
+        <h1>Crack Your Exam with<br /><em>PYQ Intelligence</em></h1>
+        <p>Upload 4 saal ke question papers — AI analyze karega kaunse topics most important hain, kaunke chances
+            highest hain.</p>
+    </div>
+
+    <div class="container">
+
+        <!-- STEP INDICATORS -->
+        <div class="steps" id="steps">
+            <div class="step-item active" id="s1"><span class="step-num">01</span>Papers Upload</div>
+            <div class="step-item" id="s2"><span class="step-num">02</span>Subject Info</div>
+            <div class="step-item" id="s3"><span class="step-num">03</span>AI Analysis</div>
+            <div class="step-item" id="s4"><span class="step-num">04</span>Results</div>
+        </div>
+
+        <!-- STEP 1: INPUT -->
+        <div id="page-input">
+
+            <!-- API SETTINGS CARD -->
+            <div class="card" id="api-card">
+                <div class="card-title" style="justify-content: space-between; display: flex; align-items: center; width: 100%;">
+                    <span style="display: flex; align-items: center; gap: 8px;">
+                        <div class="icon">🔑</div> API Configuration
+                    </span>
+                    <span id="api-status-badge" class="badge" style="background: rgba(255, 71, 87, 0.15); color: var(--red); border: 1px solid rgba(255, 71, 87, 0.3); text-transform: uppercase;">
+                        No Key Set
+                    </span>
+                </div>
+                <div style="color: var(--muted); font-size: 13px; margin-bottom: 0.8rem;">
+                    Apni <strong>Groq API Key (gsk_...)</strong> ya <strong>Gemini Key</strong> daalein to unlock full AI processing power. Ye key aapke browser ke <code>localStorage</code> me hi secure save hogi, koi server pe push nahi hogi.
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                    <input type="password" id="api-key-input" placeholder="Paste your API key here (gsk_... or AIzaSy...)" style="flex: 1; min-width: 250px; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); padding: 9px 12px; font-size: 14px;" />
+                    <button class="btn-primary" onclick="saveApiKey()" style="padding: 9px 20px; font-size: 13px; font-family: var(--font-head); font-weight: 700; border: none; border-radius: var(--radius-sm); cursor: pointer; transition: all 0.2s;">
+                        💾 Save Key
+                    </button>
+                    <button class="btn-secondary" onclick="clearApiKey()" style="padding: 9px 16px; font-size: 13px; border-radius: var(--radius-sm);">
+                        🗑️ Reset
+                    </button>
+                </div>
+            </div>
+
+            <!-- MULTI-SUBJECTS MANAGER -->
+            <div class="card">
+                <div class="card-title">
+                    <div class="icon">📚</div> Select / Add Subjects
+                </div>
+                <div style="color: var(--muted); font-size: 13px; margin-bottom: 0.8rem;">
+                    Ek saath multiple subjects ka setup karein aur ek click mein analyze karein:
+                </div>
+                <div id="subject-tabs" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1rem;">
+                    <!-- Dynamic subject tabs go here -->
+                </div>
+                <button class="btn-secondary" onclick="addNewSubject()"
+                    style="font-size: 12px; padding: 6px 14px; display: inline-flex; align-items: center; gap: 6px; background: rgba(255, 107, 53, 0.05); border-color: rgba(255, 107, 53, 0.2); color: var(--accent);">
+                    ➕ Add Another Subject
+                </button>
+            </div>
+
+            <div class="card">
+                <div class="card-title">
+                    <div class="icon">📋</div> Input Method
+                </div>
+                <div class="input-toggle">
+                    <button class="toggle-btn active" onclick="setMode('text',this)">✏️ Text/Paste</button>
+                    <button class="toggle-btn" onclick="setMode('pdf',this)">📄 PDF Upload</button>
+                </div>
+
+                <!-- TEXT MODE -->
+                <div id="mode-text">
+                    <div class="text-grid">
+                        <div class="text-area-wrap"><label>Year 1 Questions</label><textarea id="t1"
+                                placeholder="Year 1 ke questions yahan paste karo...&#10;&#10;Example:&#10;1. Define OSI model layers&#10;2. Explain CRC algorithm&#10;3. Subnetting numericals..."></textarea>
+                        </div>
+                        <div class="text-area-wrap"><label>Year 2 Questions</label><textarea id="t2"
+                                placeholder="Year 2 ke questions..."></textarea></div>
+                        <div class="text-area-wrap"><label>Year 3 Questions</label><textarea id="t3"
+                                placeholder="Year 3 ke questions..."></textarea></div>
+                        <div class="text-area-wrap"><label>Year 4 Questions</label><textarea id="t4"
+                                placeholder="Year 4 ke questions..."></textarea></div>
+                    </div>
+                </div>
+
+                <!-- PDF MODE -->
+                <div id="mode-pdf" class="hidden">
+                    <div class="api-notice">💡 PDF text automatic extract hoga — scanned/image PDFs mein text nahi
+                        milega, toh text mode use karo.</div>
+                    <div class="upload-grid">
+                        <div class="upload-zone" id="z1" onclick="document.getElementById('f1').click()">
+                            <input type="file" id="f1" accept=".pdf" onchange="handlePDF(this,1)" />
+                            <div class="upload-year">Y1</div>
+                            <div class="upload-label">Year 1 PDF</div>
+                            <div class="upload-status" id="st1">Click to upload</div>
+                        </div>
+                        <div class="upload-zone" id="z2" onclick="document.getElementById('f2').click()">
+                            <input type="file" id="f2" accept=".pdf" onchange="handlePDF(this,2)" />
+                            <div class="upload-year">Y2</div>
+                            <div class="upload-label">Year 2 PDF</div>
+                            <div class="upload-status" id="st2">Click to upload</div>
+                        </div>
+                        <div class="upload-zone" id="z3" onclick="document.getElementById('f3').click()">
+                            <input type="file" id="f3" accept=".pdf" onchange="handlePDF(this,3)" />
+                            <div class="upload-year">Y3</div>
+                            <div class="upload-label">Year 3 PDF</div>
+                            <div class="upload-status" id="st3">Click to upload</div>
+                        </div>
+                        <div class="upload-zone" id="z4" onclick="document.getElementById('f4').click()">
+                            <input type="file" id="f4" accept=".pdf" onchange="handlePDF(this,4)" />
+                            <div class="upload-year">Y4</div>
+                            <div class="upload-label">Year 4 PDF</div>
+                            <div class="upload-status" id="st4">Click to upload</div>
+                        </div>
+                    </div>
+                    <div id="pdf-extracted" class="hidden" style="margin-top:1rem;">
+                        <div class="text-grid">
+                            <div class="text-area-wrap"><label>Year 1 (extracted)</label><textarea id="p1"
+                                    placeholder="PDF se text extract hoga..."></textarea></div>
+                            <div class="text-area-wrap"><label>Year 2 (extracted)</label><textarea id="p2"
+                                    placeholder="PDF se text extract hoga..."></textarea></div>
+                            <div class="text-area-wrap"><label>Year 3 (extracted)</label><textarea id="p3"
+                                    placeholder="PDF se text extract hoga..."></textarea></div>
+                            <div class="text-area-wrap"><label>Year 4 (extracted)</label><textarea id="p4"
+                                    placeholder="PDF se text extract hoga..."></textarea></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">
+                    <div class="icon">⚙️</div> Subject Details
+                </div>
+                <div class="meta-row">
+                    <div class="meta-field"><label>Subject Name</label><input type="text" id="subject"
+                            placeholder="e.g. Computer Networks, DBMS, OS..." /></div>
+                    <div class="meta-field"><label>Exam / Board</label><input type="text" id="exam"
+                            placeholder="e.g. AKTU, UPTU, GATE, Mumbai Univ..." /></div>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                <button class="btn-primary" onclick="startAnalysis()">🔍 Analyze Karo</button>
+                <button class="btn-secondary" onclick="loadDemo()">▶ Demo Data Load Karo</button>
+            </div>
+        </div>
+
+        <!-- STEP 2: LOADING -->
+        <div id="page-loading" class="hidden">
+            <div class="card">
+                <div class="loading-wrap">
+                    <div class="spinner"></div>
+                    <div class="loading-msg" id="load-msg">Questions read kar raha hai...</div>
+                    <div class="loading-sub" id="load-sub">AI processing — thoda wait karo</div>
+                    <div
+                        style="margin-top:1.5rem; background:var(--bg3); border-radius:var(--radius-sm); height:4px; overflow:hidden; max-width:300px; margin-left:auto; margin-right:auto;">
+                        <div id="prog-bar"
+                            style="height:4px; background:var(--accent); border-radius:2px; width:0%; transition:width 0.5s ease;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 3: RESULTS -->
+        <div id="page-results" class="hidden fade-in">
+
+            <!-- SHARED REPORT BANNER -->
+            <div id="shared-banner" class="hidden"
+                style="background: linear-gradient(135deg, rgba(74, 158, 255, 0.15), rgba(74, 158, 255, 0.05)); border: 1px solid rgba(74, 158, 255, 0.3); border-radius: var(--radius-sm); padding: 12px 18px; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+                <div style="font-size: 13px; color: var(--blue);">
+                    👋 <strong>Shared Report:</strong> Apke friend ne ye PYQ analysis results share kiya hai!
+                </div>
+                <button class="btn-secondary" onclick="clearSharedReport()"
+                    style="padding: 4px 10px; font-size: 11px; border-color: rgba(74, 158, 255, 0.4); color: var(--blue); background: transparent;">
+                    Apna Naya Analyze Karo
+                </button>
+            </div>
+
+            <!-- RESULTS SUBJECT TABS -->
+            <div id="results-subject-tabs"
+                style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
+                <!-- Dynamic result tabs go here -->
+            </div>
+
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:10px;">
+                <div>
+                    <div style="font-family:var(--font-head); font-size:1.4rem; font-weight:800;">Analysis Complete ✓
+                    </div>
+                    <div style="color:var(--muted); font-size:13px;" id="res-meta"></div>
+                </div>
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                    <!-- PDF Dropdown -->
+                    <div style="position: relative;">
+                        <button class="btn-primary" onclick="toggleReportMenu()" id="pdf-btn"
+                            style="background:var(--blue); border:none; display:inline-flex; align-items:center; gap:6px;">
+                            📥 Download Report <span style="font-size:10px;">▼</span>
+                        </button>
+                        <div id="pdf-menu" class="hidden"
+                            style="position: absolute; right: 0; top: 100%; margin-top: 6px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-sm); box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 1000; min-width: 220px; overflow: hidden;">
+                            <a href="#" onclick="downloadPDF('current')"
+                                style="display: block; padding: 10px 16px; color: var(--text); text-decoration: none; font-size: 13px; transition: background 0.2s;"
+                                onmouseover="this.style.background='var(--border)'"
+                                onmouseout="this.style.background='transparent'">📄 Current Subject (PDF)</a>
+                            <a href="#" onclick="downloadPDF('all')" id="pdf-all-link"
+                                style="display: block; padding: 10px 16px; color: var(--text); text-decoration: none; font-size: 13px; transition: background 0.2s;"
+                                onmouseover="this.style.background='var(--border)'"
+                                onmouseout="this.style.background='transparent'">📚 All Subjects Combined (PDF)</a>
+                            <a href="#" onclick="downloadTXT()"
+                                style="display: block; padding: 10px 16px; color: var(--text); text-decoration: none; font-size: 13px; transition: background 0.2s; border-top: 1px solid var(--border);"
+                                onmouseover="this.style.background='var(--border)'"
+                                onmouseout="this.style.background='transparent'">📝 Simple Text Report (.txt)</a>
+                        </div>
+                    </div>
+
+                    <!-- Share Button -->
+                    <button class="btn-secondary" onclick="shareResults()"
+                        style="display:inline-flex; align-items:center; gap:6px; background:rgba(74, 158, 255, 0.1); border-color:rgba(74, 158, 255, 0.3); color:#4a9eff;">
+                        🔗 Share with Friends
+                    </button>
+
+                    <!-- Reset Button -->
+                    <button class="btn-secondary" onclick="resetApp()">↩ New Analysis</button>
+                </div>
+            </div>
+
+            <!-- STATS -->
+            <div class="stats-row" id="stats-row"></div>
+
+            <!-- CHART + FILTER -->
+            <div class="card" style="margin-bottom:1rem;">
+                <div class="card-title">
+                    <div class="icon">📊</div> Topic Frequency Chart
+                </div>
+                <div class="chart-wrap"><canvas id="freqChart" role="img" aria-label="Topic frequency bar chart">Topic
+                        frequency chart</canvas></div>
+            </div>
+
+            <!-- TOPIC LIST -->
+            <div class="card">
+                <div class="card-title">
+                    <div class="icon">📌</div> Important Topics — Ranked
+                </div>
+                <div class="filter-row">
+                    <button class="filt on all" onclick="filterTopics('all',this)">All</button>
+                    <button class="filt" onclick="filterTopics('HOT',this)">🔥 HOT</button>
+                    <button class="filt" onclick="filterTopics('LIKELY',this)">⚡ Likely</button>
+                    <button class="filt" onclick="filterTopics('WATCH',this)">👁 Watch</button>
+                </div>
+                <div id="topic-list"></div>
+            </div>
+
+            <!-- UNIT-WISE BREAKDOWN -->
+            <div class="card" id="unit-section">
+                <div class="card-title">
+                    <div class="icon">📦</div> Unit-Wise Breakdown — All 5 Units
+                </div>
+                <div style="color:var(--muted); font-size:12px; margin-bottom:1rem;">Click any unit to see its topics. All 5 units are important for exam!</div>
+                <div class="unit-grid" id="unit-grid"></div>
+                <div class="unit-tip" id="unit-tip" style="display:none;"></div>
+                <div id="unit-topics-list" style="margin-top:1rem;"></div>
+            </div>
+
+            <!-- SUMMARY -->
+            <div class="summary-box" id="summary-box"></div>
+
+            <!-- QUICK ACTIONS -->
+            <div class="quick-btns" id="quick-btns"></div>
+
+        </div>
+
+    </div>
+
+    <footer>Made with ❤️ using <span>Claude AI</span> — PYQ Analyzer v1.0</footer>
+
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        let inputMode = 'text';
+        let analysisData = null;
+        let chartInstance = null;
+        const pdfTexts = { 1: '', 2: '', 3: '', 4: '' };
+
+        // STATE FOR MULTI-SUBJECT
+        let subjectsList = [
+            {
+                id: 1,
+                name: '',
+                exam: '',
+                inputMode: 'text',
+                texts: ['', '', '', ''],
+                pdfTexts: { 1: '', 2: '', 3: '', 4: '' },
+                pdfNames: { 1: '', 2: '', 3: '', 4: '' },
+                analysisData: null
+            }
+        ];
+        let activeSubjectId = 1;
+
+        // INITIALIZE APP
+        window.addEventListener('DOMContentLoaded', () => {
+            renderSubjectTabs();
+            checkSharedLink();
+            updateApiStatus();
+
+            // Real-time synchronization of input fields to the current state
+            document.getElementById('subject').addEventListener('input', (e) => {
+                const activeSub = subjectsList.find(s => s.id === activeSubjectId);
+                if (activeSub) {
+                    activeSub.name = e.target.value;
+                    renderSubjectTabs();
+                }
+            });
+
+            document.getElementById('exam').addEventListener('input', (e) => {
+                const activeSub = subjectsList.find(s => s.id === activeSubjectId);
+                if (activeSub) {
+                    activeSub.exam = e.target.value;
+                }
+            });
+        });
+
+        // API KEY MANAGEMENT
+        function updateApiStatus() {
+            const key = localStorage.getItem('pyq_api_key') || '';
+            const statusEl = document.getElementById('api-status-badge');
+            const inputEl = document.getElementById('api-key-input');
+            if (!statusEl || !inputEl) return;
+            if (key) {
+                statusEl.textContent = '✓ Configured';
+                statusEl.style.background = 'rgba(45, 206, 122, 0.15)';
+                statusEl.style.color = 'var(--green)';
+                statusEl.style.borderColor = 'rgba(45, 206, 122, 0.3)';
+                inputEl.value = '••••••••••••••••••••';
+            } else {
+                statusEl.textContent = 'No Key Set';
+                statusEl.style.background = 'rgba(255, 71, 87, 0.15)';
+                statusEl.style.color = 'var(--red)';
+                statusEl.style.borderColor = 'rgba(255, 71, 87, 0.3)';
+                inputEl.value = '';
+            }
+        }
+
+        function saveApiKey() {
+            const keyInput = document.getElementById('api-key-input').value.trim();
+            if (!keyInput) {
+                showToast('Kripya valid API key enter karein!');
+                return;
+            }
+            if (keyInput === '••••••••••••••••••••') {
+                showToast('API Key pehle se configured hai.');
+                return;
+            }
+            localStorage.setItem('pyq_api_key', keyInput);
+            updateApiStatus();
+            showToast('Key safely save ho gayi! 🎉');
+        }
+
+        function clearApiKey() {
+            localStorage.removeItem('pyq_api_key');
+            updateApiStatus();
+            showToast('API Key remove ho gayi.');
+        }
+
+        // MULTI-SUBJECT MANAGEMENT
+        function renderSubjectTabs() {
+            const container = document.getElementById('subject-tabs');
+            if (!container) return;
+
+            container.innerHTML = subjectsList.map((sub, idx) => {
+                const displayName = sub.name.trim() || `Subject ${idx + 1}`;
+                const activeClass = sub.id === activeSubjectId ? 'active' : '';
+                const deleteButton = subjectsList.length > 1
+                    ? `<button class="delete-btn" onclick="deleteSubject(${sub.id}, event)" title="Delete Subject">✕</button>`
+                    : '';
+                return `
+                    <div class="subject-tab ${activeClass}" onclick="switchSubject(${sub.id})">
+                        <span>📚 ${displayName}</span>
+                        ${deleteButton}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function switchSubject(subId) {
+            if (subId === activeSubjectId) return;
+            saveActiveSubjectState();
+            loadSubjectState(subId);
+            renderSubjectTabs();
+        }
+
+        function deleteSubject(subId, event) {
+            if (event) event.stopPropagation();
+            if (subjectsList.length <= 1) return;
+
+            if (!confirm('Kya aap sach me ye subject delete karna chahte hain?')) return;
+
+            const index = subjectsList.findIndex(s => s.id === subId);
+            if (index === -1) return;
+
+            subjectsList.splice(index, 1);
+
+            if (activeSubjectId === subId) {
+                activeSubjectId = subjectsList[0].id;
+            }
+
+            loadSubjectState(activeSubjectId);
+            renderSubjectTabs();
+        }
+
+        function addNewSubject() {
+            saveActiveSubjectState();
+
+            const newId = Math.max(...subjectsList.map(s => s.id), 0) + 1;
+            const newSub = {
+                id: newId,
+                name: '',
+                exam: document.getElementById('exam').value.trim() || '',
+                inputMode: 'text',
+                texts: ['', '', '', ''],
+                pdfTexts: { 1: '', 2: '', 3: '', 4: '' },
+                pdfNames: { 1: '', 2: '', 3: '', 4: '' },
+                analysisData: null
+            };
+
+            subjectsList.push(newSub);
+            activeSubjectId = newId;
+
+            loadSubjectState(newId);
+            renderSubjectTabs();
+            document.getElementById('subject').focus();
+        }
+
+        function saveActiveSubjectState() {
+            const activeSub = subjectsList.find(s => s.id === activeSubjectId);
+            if (!activeSub) return;
+
+            activeSub.name = document.getElementById('subject').value.trim();
+            activeSub.exam = document.getElementById('exam').value.trim();
+            activeSub.inputMode = inputMode;
+
+            if (inputMode === 'text') {
+                activeSub.texts = [1, 2, 3, 4].map(i => document.getElementById('t' + i).value.trim());
+            } else {
+                activeSub.texts = [1, 2, 3, 4].map(i => pdfTexts[i] || '');
+            }
+            activeSub.pdfTexts = { ...pdfTexts };
+        }
+
+        function loadSubjectState(subId) {
+            const sub = subjectsList.find(s => s.id === subId);
+            if (!sub) return;
+
+            activeSubjectId = subId;
+            document.getElementById('subject').value = sub.name;
+            document.getElementById('exam').value = sub.exam;
+
+            inputMode = sub.inputMode || 'text';
+            const textToggleBtn = document.querySelector('.input-toggle .toggle-btn:nth-child(1)');
+            const pdfToggleBtn = document.querySelector('.input-toggle .toggle-btn:nth-child(2)');
+
+            if (inputMode === 'text') {
+                textToggleBtn.classList.add('active');
+                pdfToggleBtn.classList.remove('active');
+                document.getElementById('mode-text').classList.remove('hidden');
+                document.getElementById('mode-pdf').classList.add('hidden');
+
+                [1, 2, 3, 4].forEach(i => {
+                    document.getElementById('t' + i).value = sub.texts[i - 1] || '';
+                });
+            } else {
+                textToggleBtn.classList.remove('active');
+                pdfToggleBtn.classList.add('active');
+                document.getElementById('mode-text').classList.add('hidden');
+                document.getElementById('mode-pdf').classList.remove('hidden');
+
+                [1, 2, 3, 4].forEach(i => {
+                    pdfTexts[i] = sub.pdfTexts[i] || '';
+                    document.getElementById('p' + i).value = pdfTexts[i].substring(0, 2000) + (pdfTexts[i].length > 2000 ? '\n...[truncated for display]' : '');
+
+                    const st = document.getElementById('st' + i);
+                    const zone = document.getElementById('z' + i);
+                    if (sub.pdfNames[i]) {
+                        st.textContent = '✓ ' + sub.pdfNames[i].substring(0, 20);
+                        st.className = 'upload-status ok';
+                        zone.classList.add('has-file');
+                    } else {
+                        st.textContent = 'Click to upload';
+                        st.className = 'upload-status';
+                        zone.classList.remove('has-file');
+                    }
+                });
+
+                const hasExtractedText = Object.values(pdfTexts).some(t => t.trim().length > 0);
+                document.getElementById('pdf-extracted').classList.toggle('hidden', !hasExtractedText);
+            }
+        }
+
+        function setMode(mode, btn) {
+            inputMode = mode;
+            document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('mode-text').classList.toggle('hidden', mode !== 'text');
+            document.getElementById('mode-pdf').classList.toggle('hidden', mode !== 'pdf');
+        }
+
+        async function handlePDF(input, yr) {
+            const file = input.files[0];
+            if (!file) return;
+            const st = document.getElementById('st' + yr);
+            const zone = document.getElementById('z' + yr);
+            st.textContent = 'Extracting...';
+            st.className = 'upload-status';
+            try {
+                const ab = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+                let text = '';
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const content = await page.getTextContent();
+                    text += content.items.map(s => s.str).join(' ') + '\n';
+                }
+                pdfTexts[yr] = text;
+
+                const activeSub = subjectsList.find(s => s.id === activeSubjectId);
+                if (activeSub) {
+                    activeSub.pdfNames[yr] = file.name;
+                    activeSub.pdfTexts[yr] = text;
+                }
+
+                document.getElementById('p' + yr).value = text.substring(0, 2000) + (text.length > 2000 ? '\n...[truncated for display]' : '');
+                document.getElementById('pdf-extracted').classList.remove('hidden');
+                st.textContent = '✓ ' + file.name.substring(0, 20);
+                st.className = 'upload-status ok';
+                zone.classList.add('has-file');
+            } catch (e) {
+                st.textContent = '✗ Error — try text mode';
+                st.className = 'upload-status';
+                zone.style.borderColor = 'var(--red)';
+            }
+        }
+
+        function getTexts() {
+            if (inputMode === 'pdf') {
+                return [1, 2, 3, 4].map(i => pdfTexts[i] || document.getElementById('p' + i).value.trim());
+            }
+            return [1, 2, 3, 4].map(i => document.getElementById('t' + i).value.trim());
+        }
+
+        function setStep(n) {
+            for (let i = 1; i <= 4; i++) {
+                const el = document.getElementById('s' + i);
+                el.classList.remove('active', 'done');
+                if (i < n) el.classList.add('done');
+                else if (i === n) el.classList.add('active');
+            }
+        }
+
+        // ANALYSIS LAUNCH
+        async function startAnalysis() {
+            saveActiveSubjectState();
+
+            const subjectsToAnalyze = subjectsList.filter(sub => {
+                const hasText = sub.inputMode === 'text'
+                    ? sub.texts.some(t => t.trim().length > 0)
+                    : Object.values(sub.pdfTexts).some(t => t.trim().length > 0);
+                return hasText;
+            });
+
+            if (subjectsToAnalyze.length === 0) {
+                alert('Kam se kam ek subject ke questions daalo analyze karne ke liye!');
+                return;
+            }
+
+            let apiKey = localStorage.getItem('pyq_api_key') || '';
+            if (!apiKey) {
+                const keyInput = document.getElementById('api-key-input').value.trim();
+                if (keyInput && keyInput !== '••••••••••••••••••••') {
+                    apiKey = keyInput;
+                    localStorage.setItem('pyq_api_key', apiKey);
+                    updateApiStatus();
+                }
+            }
+
+            if (!apiKey) {
+                alert('Analysis shuru karne ke liye pehle apni Groq ya Gemini API key Configuration box me enter karein!');
+                document.getElementById('api-key-input').focus();
+                document.getElementById('api-card').scrollIntoView({ behavior: 'smooth' });
+                return;
+            }
+
+            document.getElementById('page-input').classList.add('hidden');
+            document.getElementById('page-loading').classList.remove('hidden');
+            setStep(3);
+
+            const isGroq = apiKey.startsWith('gsk_');
+            const prog = document.getElementById('prog-bar');
+
+            // LOOP THROUGH ALL CONFIGURED SUBJECTS
+            for (let i = 0; i < subjectsToAnalyze.length; i++) {
+                const sub = subjectsToAnalyze[i];
+                const subName = sub.name.trim() || `Subject ${i + 1}`;
+                const examName = sub.exam.trim() || 'University Exam';
+
+                document.getElementById('load-msg').textContent = `Analyzing "${subName}"...`;
+                document.getElementById('load-sub').textContent = `Subject ${i + 1} of ${subjectsToAnalyze.length} — Processing exam papers`;
+
+                const baseProgress = (i / subjectsToAnalyze.length) * 100;
+                const stepProgress = 100 / subjectsToAnalyze.length;
+                prog.style.width = baseProgress + '%';
+
+                let currentSubProgress = 0;
+                const subInterval = setInterval(() => {
+                    currentSubProgress = Math.min(currentSubProgress + 15, 85);
+                    prog.style.width = (baseProgress + (currentSubProgress / 100) * stepProgress) + '%';
+                }, 800);
+
+                const texts = sub.inputMode === 'text'
+                    ? sub.texts
+                    : [1, 2, 3, 4].map(yr => sub.pdfTexts[yr] || '');
+
+                const paperText = texts.map((t, idx) => t ? `=== YEAR ${idx + 1} ===\n${t.substring(0, 1500)}` : '').filter(Boolean).join('\n\n');
+
+                const prompt = `You are an expert exam question paper analyzer for Indian engineering university exams (B.Tech/BE). Analyze the following ${subName} past year questions from ${texts.filter(Boolean).length} years of ${examName} papers.
+
+IMPORTANT: Engineering subjects have 5 units in their syllabus. You MUST categorize each topic into its correct syllabus unit (1-5) based on standard B.Tech syllabus ordering for ${subName}.
+
+${paperText}
+
+Return ONLY valid JSON (no markdown, no explanation) in this exact format:
+{
+  "totalQuestions": <number>,
+  "uniqueTopics": <number>,
+  "hotCount": <number>,
+  "likelyCount": <number>,
+  "summary": "<2-3 line Hinglish summary with unit-wise exam strategy>",
+  "quickActions": ["<action 1>", "<action 2>", "<action 3>"],
+  "unitWiseSummary": [
+    {"unit": 1, "name": "<unit 1 name>", "topicCount": <number>, "importance": "<HIGH|MEDIUM|LOW>", "tip": "<short Hinglish study tip>"},
+    {"unit": 2, "name": "<unit 2 name>", "topicCount": <number>, "importance": "<HIGH|MEDIUM|LOW>", "tip": "<short Hinglish study tip>"},
+    {"unit": 3, "name": "<unit 3 name>", "topicCount": <number>, "importance": "<HIGH|MEDIUM|LOW>", "tip": "<short Hinglish study tip>"},
+    {"unit": 4, "name": "<unit 4 name>", "topicCount": <number>, "importance": "<HIGH|MEDIUM|LOW>", "tip": "<short Hinglish study tip>"},
+    {"unit": 5, "name": "<unit 5 name>", "topicCount": <number>, "importance": "<HIGH|MEDIUM|LOW>", "tip": "<short Hinglish study tip>"}
+  ],
+  "topics": [
+    {
+      "topic": "<topic name, max 7 words>",
+      "unit": <1-5>,
+      "appeared": <1-4>,
+      "years": [<1 or 0 for each year, array of 4>],
+      "importance": "<HOT|LIKELY|WATCH>",
+      "difficulty": "<Easy|Medium|Hard>",
+      "timeEstimate": "<hours to study, e.g. '2 hours', '4.5 hours'>",
+      "reason": "<short Hinglish reason, max 12 words>",
+      "examples": "<1-2 actual question examples semicolon separated, max 100 chars>"
+    }
+  ]
+}
+Rules: Group similar questions. HOT=3-4 years. LIKELY=2 years. WATCH=1 year important. Sort HOT first. Max 20 topics. Categorize EVERY topic into a unit (1-5) based on standard ${subName} syllabus. All 5 units must appear in unitWiseSummary. Valid JSON only.`;
+
+                try {
+                    let res;
+                    if (isGroq) {
+                        res = await fetch(
+                            `https://api.groq.com/openai/v1/chat/completions`,
+                            {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${apiKey}`
+                                },
+                                body: JSON.stringify({
+                                    model: 'llama-3.3-70b-versatile',
+                                    messages: [{ role: 'user', content: prompt }],
+                                    temperature: 0.3,
+                                    response_format: { type: 'json_object' }
+                                })
+                            }
+                        );
+                    } else {
+                        res = await fetch(
+                            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+                            {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    contents: [{ parts: [{ text: prompt }] }],
+                                    generationConfig: { temperature: 0.3, maxOutputTokens: 2048 }
+                                })
+                            }
+                        );
+                    }
+
+                    clearInterval(subInterval);
+                    const raw = await res.json();
+
+                    if (raw.error) {
+                        throw new Error(raw.error.message || 'API Error');
+                    }
+
+                    const text = isGroq
+                        ? (raw.choices?.[0]?.message?.content || '')
+                        : (raw.candidates?.[0]?.content?.parts?.[0]?.text || '');
+
+                    const jsonMatch = text.match(/\{[\s\S]*\}/);
+                    if (!jsonMatch) throw new Error('Valid JSON response missing');
+
+                    const data = JSON.parse(jsonMatch[0]);
+                    data._subject = subName;
+                    data._exam = examName;
+                    data._years = texts.filter(Boolean).length;
+
+                    sub.analysisData = data;
+
+                } catch (e) {
+                    clearInterval(subInterval);
+                    console.warn(`Analysis failed for ${subName}, running fallback:`, e);
+                    const fallback = runLocalAnalysis(texts, subName, examName);
+                    fallback._subject = subName;
+                    fallback._exam = examName;
+                    fallback._years = texts.filter(Boolean).length;
+                    fallback.summary = '⚠️ AI API connection error. Local analysis completed successfully. Topics may be basic.';
+
+                    sub.analysisData = fallback;
+                }
+
+                if (i < subjectsToAnalyze.length - 1) {
+                    await new Promise(r => setTimeout(r, 600));
+                }
+            }
+
+            prog.style.width = '100%';
+            activeSubjectId = subjectsToAnalyze[0].id;
+
+            setTimeout(() => {
+                document.getElementById('page-loading').classList.add('hidden');
+                document.getElementById('page-results').classList.remove('hidden');
+                setStep(4);
+
+                showResults(subjectsToAnalyze[0].analysisData);
+                renderResultSubjectTabs();
+            }, 500);
+        }
+
+        // RESULTS RENDERING
+        function showResults(data) {
+            analysisData = data;
+            document.getElementById('res-meta').textContent = (data._subject || 'Subject') + ' — ' + (data._exam || 'Exam') + ' — ' + (data._years || 4) + ' years analyzed';
+
+            document.getElementById('stats-row').innerHTML = `
+                <div class="stat-box"><div class="stat-n">${data._years || 4}</div><div class="stat-l">Years analyzed</div></div>
+                <div class="stat-box"><div class="stat-n">${data.totalQuestions || '~'}</div><div class="stat-l">Total questions</div></div>
+                <div class="stat-box"><div class="stat-n" style="color:var(--red)">${data.hotCount || data.topics.filter(t => t.importance === 'HOT').length}</div><div class="stat-l">HOT topics</div></div>
+                <div class="stat-box"><div class="stat-n" style="color:var(--accent2)">${data.likelyCount || data.topics.filter(t => t.importance === 'LIKELY').length}</div><div class="stat-l">Likely topics</div></div>
+                <div class="stat-box"><div class="stat-n">${data.uniqueTopics || data.topics.length}</div><div class="stat-l">Unique topics</div></div>
+            `;
+
+            if (chartInstance) chartInstance.destroy();
+            const top10 = data.topics.slice(0, 10);
+            const ctx = document.getElementById('freqChart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: top10.map(t => t.topic.length > 22 ? t.topic.substring(0, 22) + '…' : t.topic),
+                    datasets: [{
+                        label: 'Years appeared',
+                        data: top10.map(t => t.appeared),
+                        backgroundColor: top10.map(t => t.importance === 'HOT' ? 'rgba(255,71,87,0.7)' : t.importance === 'LIKELY' ? 'rgba(255,170,0,0.7)' : 'rgba(45,206,122,0.6)'),
+                        borderColor: top10.map(t => t.importance === 'HOT' ? '#ff4757' : t.importance === 'LIKELY' ? '#ffaa00' : '#2dce7a'),
+                        borderWidth: 1.5,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: '#8888a0', font: { size: 11 }, maxRotation: 35 }, grid: { color: 'rgba(255,255,255,0.04)' } },
+                        y: { ticks: { color: '#8888a0', stepSize: 1 }, grid: { color: 'rgba(255,255,255,0.04)' }, max: 4, min: 0 }
+                    }
+                }
+            });
+
+            renderTopics(data.topics, 'all');
+            document.getElementById('summary-box').innerHTML = '<strong>AI Summary:</strong> ' + data.summary;
+
+            const qb = document.getElementById('quick-btns');
+            qb.innerHTML = '';
+            (data.quickActions || []).forEach(a => {
+                const b = document.createElement('button');
+                b.className = 'qbtn';
+                b.textContent = a;
+                qb.appendChild(b);
+            });
+
+            // Render unit-wise breakdown
+            renderUnitWise(data);
+        }
+
+        // RENDER RESULT TOPICS LIST WITH SMART INDICATORS
+        function renderTopics(topics, filter) {
+            const list = document.getElementById('topic-list');
+            const filtered = filter === 'all' ? topics : topics.filter(t => t.importance === filter);
+            const colors = { HOT: '#ff4757', LIKELY: '#ffaa00', WATCH: '#2dce7a' };
+            const labels = { HOT: '🔥 Must Study — appeared 3-4 years', LIKELY: '⚡ Very Likely — appeared 2 years', WATCH: '👁 Worth Watching — 1 year' };
+            let html = ''; let lastImp = '';
+
+            filtered.forEach((t, i) => {
+                if (t.importance !== lastImp) {
+                    html += `<div class="topic-section-hd">${labels[t.importance] || t.importance}</div>`;
+                    lastImp = t.importance;
+                }
+                const pct = Math.round((t.appeared / 4) * 100);
+                const yrs = (t.years || [0, 0, 0, 0]).map((on, j) => `<span class="yr-dot ${on ? 'yr-on' : 'yr-off'}">${['22', '23', '24', '25'][j] || ('Y' + (j + 1))}</span>`).join('');
+
+                const subjectName = analysisData?._subject || 'Subject';
+                const searchQ = encodeURIComponent(`${subjectName} ${t.topic}`);
+                const ytLink = `https://www.youtube.com/results?search_query=${searchQ}`;
+                const ggLink = `https://www.google.com/search?q=${searchQ}`;
+
+                const diffMeter = getDifficultyMeter(t.difficulty);
+                const diffClass = (t.difficulty || 'Medium').toLowerCase();
+                const timeEst = t.timeEstimate || '2 hours';
+
+                html += `<div class="topic-row">
+      <div>
+        <div class="topic-name">${i + 1}. ${t.topic} <span style="font-size:10px; padding:2px 6px; border-radius:4px; background:rgba(255,107,53,0.12); color:var(--accent); font-weight:700; margin-left:6px; font-family:var(--font-head);">U${t.unit || '?'}</span></div>
+        <div class="topic-reason">${t.reason}</div>
+        ${t.examples ? `<div class="topic-ex">${t.examples}</div>` : ''}
+        
+        <!-- SMART FEATURES: TIME & DIFFICULTY INDICATORS -->
+        <div style="display: flex; gap: 14px; margin-top: 8px; font-size: 12px; flex-wrap: wrap; align-items: center;">
+            <span style="display: inline-flex; align-items: center; gap: 4px; color: var(--muted);">
+                ⏱️ <strong style="color: var(--text);">Est. Time:</strong> <span style="color: var(--text); font-weight: 500;">${timeEst}</span>
+            </span>
+            <span style="display: inline-flex; align-items: center; gap: 6px; color: var(--muted);">
+                🧠 <strong style="color: var(--text);">Difficulty:</strong>
+                <span style="letter-spacing: 1px; font-size: 11px; display: inline-flex; align-items: center; line-height: 1;">${diffMeter}</span>
+                <span class="diff-tag diff-${diffClass}">${t.difficulty || 'Medium'}</span>
+            </span>
+        </div>
+
+        <div class="bar-wrap"><div class="bar-fill" style="width:${pct}%; background:${colors[t.importance]};"></div></div>
+        <div class="study-btn-group">
+          <a href="${ytLink}" target="_blank" class="study-btn yt" title="Search on YouTube">🎥 YouTube Pe Padhein</a>
+          <a href="${ggLink}" target="_blank" class="study-btn gg" title="Search on Google">🔍 Google Pe Padhein</a>
+        </div>
+      </div>
+      <div class="yr-dots">${yrs}</div>
+      <div style="text-align:right;"><span class="badge ${t.importance}">${t.importance}</span><br/><span style="font-size:11px;color:var(--muted);">${t.appeared}/4 yrs</span></div>
+    </div>`;
+            });
+            list.innerHTML = html || '<div style="color:var(--muted); padding:1rem 0;">Is filter mein koi topic nahi hai.</div>';
+        }
+
+        function getDifficultyMeter(diff) {
+            const d = (diff || 'Medium').toLowerCase();
+            if (d === 'easy') {
+                return `<span style="color:var(--green)">●</span><span style="color:var(--border2)">●●</span>`;
+            } else if (d === 'medium') {
+                return `<span style="color:var(--accent2)">●●</span><span style="color:var(--border2)">●</span>`;
+            } else {
+                return `<span style="color:var(--red)">●●●</span>`;
+            }
+        }
+
+        // UNIT-WISE RENDERING
+        let activeUnitFilter = null;
+
+        function renderUnitWise(data) {
+            const grid = document.getElementById('unit-grid');
+            const tipEl = document.getElementById('unit-tip');
+            const topicsList = document.getElementById('unit-topics-list');
+            if (!grid) return;
+
+            activeUnitFilter = null;
+            tipEl.style.display = 'none';
+            topicsList.innerHTML = '';
+
+            // Build unit summary from AI data or generate from topics
+            let units = data.unitWiseSummary;
+            if (!units || units.length === 0) {
+                // Fallback: build from topic unit fields
+                const unitMap = {};
+                (data.topics || []).forEach(t => {
+                    const u = t.unit || 1;
+                    if (!unitMap[u]) unitMap[u] = { unit: u, name: 'Unit ' + u, topicCount: 0, importance: 'MEDIUM', tip: 'Is unit ke topics practice karo' };
+                    unitMap[u].topicCount++;
+                    if (t.importance === 'HOT') unitMap[u].importance = 'HIGH';
+                });
+                units = [];
+                for (let i = 1; i <= 5; i++) {
+                    units.push(unitMap[i] || { unit: i, name: 'Unit ' + i, topicCount: 0, importance: 'LOW', tip: 'Kam questions aaye but skip mat karo' });
+                }
+            }
+
+            grid.innerHTML = units.map(u => {
+                const hotInUnit = (data.topics || []).filter(t => (t.unit || 1) === u.unit && t.importance === 'HOT').length;
+                return `
+                    <div class="unit-card unit-imp-${u.importance}" onclick="filterByUnit(${u.unit}, '${u.tip.replace(/'/g, "\\'")}')"
+                         title="${u.tip}">
+                        <div class="unit-num">U${u.unit}</div>
+                        <div class="unit-name">${u.name}</div>
+                        <div class="unit-meta">${u.topicCount} topics${hotInUnit > 0 ? ' · 🔥' + hotInUnit + ' HOT' : ''}</div>
+                        <div class="unit-meta" style="margin-top:2px;">
+                            <span style="color:${{HIGH:'var(--red)',MEDIUM:'var(--accent2)',LOW:'var(--green)'}[u.importance] || 'var(--muted)'}; font-weight:700; font-size:10px;">
+                                ${u.importance} Priority
+                            </span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filterByUnit(unitNum, tip) {
+            const cards = document.querySelectorAll('.unit-card');
+            const tipEl = document.getElementById('unit-tip');
+            const topicsList = document.getElementById('unit-topics-list');
+
+            if (activeUnitFilter === unitNum) {
+                // Toggle off
+                activeUnitFilter = null;
+                cards.forEach(c => c.classList.remove('active'));
+                tipEl.style.display = 'none';
+                topicsList.innerHTML = '';
+                return;
+            }
+
+            activeUnitFilter = unitNum;
+            cards.forEach((c, i) => c.classList.toggle('active', i === unitNum - 1));
+
+            tipEl.style.display = 'block';
+            tipEl.innerHTML = `<strong>💡 Unit ${unitNum} Tip:</strong> ${tip}`;
+
+            if (!analysisData) return;
+            const unitTopics = analysisData.topics.filter(t => (t.unit || 1) === unitNum);
+            const colors = { HOT: '#ff4757', LIKELY: '#ffaa00', WATCH: '#2dce7a' };
+
+            if (unitTopics.length === 0) {
+                topicsList.innerHTML = '<div style="color:var(--muted); padding:0.5rem 0; font-size:13px;">Is unit mein koi identified topic nahi mila. Syllabus se basic cover karo.</div>';
+                return;
+            }
+
+            topicsList.innerHTML = '<div style="font-size:12px; color:var(--muted); font-weight:600; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.06em;">Unit ' + unitNum + ' Topics (' + unitTopics.length + ')</div>' +
+                unitTopics.map((t, i) => {
+                    const pct = Math.round((t.appeared / 4) * 100);
+                    return `<div style="padding:8px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; gap:10px;">
+                        <div style="flex:1;">
+                            <div style="font-weight:600; font-size:13px;">${i + 1}. ${t.topic}</div>
+                            <div style="font-size:11px; color:var(--muted); margin-top:2px;">${t.reason}</div>
+                            <div class="bar-wrap" style="max-width:200px;"><div class="bar-fill" style="width:${pct}%; background:${colors[t.importance]};"></div></div>
+                        </div>
+                        <div style="text-align:right; white-space:nowrap;">
+                            <span class="badge ${t.importance}">${t.importance}</span>
+                            <div style="font-size:10px; color:var(--muted); margin-top:3px;">${t.appeared}/4 yrs · ${t.difficulty || 'Medium'}</div>
+                        </div>
+                    </div>`;
+                }).join('');
+        }
+
+        // RESULTS SWITCHER TABS
+        function renderResultSubjectTabs() {
+            const container = document.getElementById('results-subject-tabs');
+            if (!container) return;
+
+            const analyzedSubjects = subjectsList.filter(s => s.analysisData !== null);
+
+            if (analyzedSubjects.length <= 1) {
+                container.classList.add('hidden');
+                return;
+            }
+
+            container.classList.remove('hidden');
+
+            container.innerHTML = analyzedSubjects.map(sub => {
+                const activeClass = sub.id === activeSubjectId ? 'active' : '';
+                return `
+                    <div class="subject-tab ${activeClass}" onclick="switchResultSubject(${sub.id})" style="padding: 6px 14px; font-size: 12.5px;">
+                        <span>📚 ${sub.name || 'Subject'}</span>
+                    </div>
+                `;
+            }).join('');
+
+            const pdfAllLink = document.getElementById('pdf-all-link');
+            if (pdfAllLink) {
+                pdfAllLink.classList.toggle('hidden', analyzedSubjects.length <= 1);
+            }
+        }
+
+        function switchResultSubject(subId) {
+            if (subId === activeSubjectId) return;
+            const sub = subjectsList.find(s => s.id === subId);
+            if (sub && sub.analysisData) {
+                activeSubjectId = subId;
+                showResults(sub.analysisData);
+                renderResultSubjectTabs();
+            }
+        }
+
+        function filterTopics(type, btn) {
+            document.querySelectorAll('.filt').forEach(b => { b.classList.remove('on', 'all', 'hot', 'likely', 'watch'); });
+            btn.classList.add('on', type === 'all' ? 'all' : type === 'HOT' ? 'hot' : type === 'LIKELY' ? 'likely' : 'watch');
+            if (analysisData) renderTopics(analysisData.topics, type);
+        }
+
+        function resetApp() {
+            subjectsList = [
+                {
+                    id: 1,
+                    name: '',
+                    exam: '',
+                    inputMode: 'text',
+                    texts: ['', '', '', ''],
+                    pdfTexts: { 1: '', 2: '', 3: '', 4: '' },
+                    pdfNames: { 1: '', 2: '', 3: '', 4: '' },
+                    analysisData: null
+                }
+            ];
+            activeSubjectId = 1;
+            analysisData = null;
+
+            document.getElementById('page-results').classList.add('hidden');
+            document.getElementById('page-input').classList.remove('hidden');
+            setStep(1);
+
+            document.getElementById('subject').value = '';
+            document.getElementById('exam').value = '';
+
+            [1, 2, 3, 4].forEach(i => {
+                document.getElementById('t' + i).value = '';
+                pdfTexts[i] = '';
+                document.getElementById('st' + i).textContent = 'Click to upload';
+                document.getElementById('z' + i).classList.remove('has-file');
+            });
+
+            renderSubjectTabs();
+        }
+
+        // PDF EXPORTS MENU
+        function toggleReportMenu() {
+            const menu = document.getElementById('pdf-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        // Close report menu when clicking outside
+        document.addEventListener('click', (e) => {
+            const btn = document.getElementById('pdf-btn');
+            const menu = document.getElementById('pdf-menu');
+            if (btn && menu && !btn.contains(e.target) && !menu.contains(e.target)) {
+                menu.classList.add('hidden');
+            }
+        });
+
+        // GENERATE PROPER PDF REPORT
+        async function downloadPDF(type) {
+            document.getElementById('pdf-menu').classList.add('hidden');
+            showToast('PDF report taiyar ho raha hai, wait karein...');
+
+            let subjectsToInclude = [];
+
+            if (type === 'current') {
+                const currentSub = subjectsList.find(s => s.id === activeSubjectId);
+                if (currentSub && currentSub.analysisData) {
+                    subjectsToInclude = [currentSub];
+                }
+            } else {
+                subjectsToInclude = subjectsList.filter(s => s.analysisData !== null);
+            }
+
+            if (subjectsToInclude.length === 0) {
+                showToast('Koi valid analyzed subject nahi mila!');
+                return;
+            }
+
+            let htmlContent = `<div style="padding: 20px; color: #1c1c24; background: #ffffff; font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 12.5px; line-height: 1.6; width: 700px; margin: 0 auto;">`;
+
+            subjectsToInclude.forEach((sub, sIdx) => {
+                const data = sub.analysisData;
+                const examName = sub.exam || 'University Exam';
+                const subName = sub.name || 'General';
+                const yearsCount = sub.texts.filter(t => t.trim().length > 0).length || 4;
+
+                const pageBreakStyle = sIdx > 0 ? 'page-break-before: always; margin-top: 30px; padding-top: 20px;' : '';
+
+                htmlContent += `
+                <div style="${pageBreakStyle}">
+                    <!-- HEADER TABLE (Avoid Flexbox) -->
+                    <table style="width: 100%; border-collapse: collapse; border-bottom: 2px solid #ff6b35; padding-bottom: 12px; margin-bottom: 25px; page-break-inside: avoid; break-inside: avoid;">
+                        <tr>
+                            <td style="text-align: left; vertical-align: bottom; padding-bottom: 10px;">
+                                <h1 style="font-family: sans-serif; font-size: 26px; font-weight: 800; color: #0a0a0f; margin: 0;">PYQ<span style="color: #ff6b35;">Analyzer</span></h1>
+                                <p style="color: #8888a0; font-size: 10px; margin: 4px 0 0 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Smart Exam Preparation Insights</p>
+                            </td>
+                            <td style="text-align: right; vertical-align: bottom; padding-bottom: 10px;">
+                                <div style="font-size: 10px; color: #8888a0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Generated On</div>
+                                <div style="font-size: 13px; color: #1c1c27; font-weight: 700; margin-top: 2px;">${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <!-- SUBJECT METADATA CARD -->
+                    <table style="width: 100%; border-collapse: collapse; background: #f7f7fa; border: 1px solid #e2e2eb; border-radius: 8px; margin-bottom: 25px; page-break-inside: avoid; break-inside: avoid;">
+                        <tr>
+                            <td style="width: 38%; padding: 15px 20px; vertical-align: top;">
+                                <span style="font-size: 10px; color: #8888a0; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Subject Name</span>
+                                <div style="font-size: 17px; font-weight: 700; color: #0a0a0f; margin-top: 4px;">${subName}</div>
+                            </td>
+                            <td style="width: 38%; padding: 15px 20px; vertical-align: top; border-left: 1px solid #e2e2eb;">
+                                <span style="font-size: 10px; color: #8888a0; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Target Exam / Board</span>
+                                <div style="font-size: 17px; font-weight: 700; color: #0a0a0f; margin-top: 4px;">${examName}</div>
+                            </td>
+                            <td style="width: 24%; padding: 15px 20px; vertical-align: top; border-left: 1px solid #e2e2eb;">
+                                <span style="font-size: 10px; color: #8888a0; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Papers Analyzed</span>
+                                <div style="font-size: 17px; font-weight: 700; color: #0a0a0f; margin-top: 4px;">${yearsCount} Years</div>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <!-- KEY STATS TABLE -->
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px; page-break-inside: avoid; break-inside: avoid;">
+                        <tr>
+                            <td style="width: 25%; padding-right: 10px;">
+                                <div style="border: 1px solid #e2e2eb; border-radius: 6px; padding: 12px 10px; text-align: center; background: #ffffff;">
+                                    <div style="font-size: 22px; font-weight: 800; color: #0a0a0f;">${data.totalQuestions || '~'}</div>
+                                    <div style="font-size: 10px; color: #8888a0; margin-top: 3px; text-transform: uppercase; font-weight: 600;">Total Questions</div>
+                                </div>
+                            </td>
+                            <td style="width: 25%; padding-left: 5px; padding-right: 5px;">
+                                <div style="border: 1px solid #ff4757; border-radius: 6px; padding: 12px 10px; text-align: center; background: rgba(255, 71, 87, 0.02);">
+                                    <div style="font-size: 22px; font-weight: 800; color: #ff4757;">${data.hotCount || data.topics.filter(t => t.importance === 'HOT').length}</div>
+                                    <div style="font-size: 10px; color: #ff4757; margin-top: 3px; font-weight: 700; text-transform: uppercase;">🔥 HOT Topics</div>
+                                </div>
+                            </td>
+                            <td style="width: 25%; padding-left: 5px; padding-right: 5px;">
+                                <div style="border: 1px solid #ffaa00; border-radius: 6px; padding: 12px 10px; text-align: center; background: rgba(255, 170, 0, 0.02);">
+                                    <div style="font-size: 22px; font-weight: 800; color: #ffaa00;">${data.likelyCount || data.topics.filter(t => t.importance === 'LIKELY').length}</div>
+                                    <div style="font-size: 10px; color: #ffaa00; margin-top: 3px; font-weight: 700; text-transform: uppercase;">⚡ Likely Topics</div>
+                                </div>
+                            </td>
+                            <td style="width: 25%; padding-left: 10px;">
+                                <div style="border: 1px solid #2dce7a; border-radius: 6px; padding: 12px 10px; text-align: center; background: rgba(45, 206, 122, 0.02);">
+                                    <div style="font-size: 22px; font-weight: 800; color: #2dce7a;">${data.topics.filter(t => t.importance === 'WATCH').length}</div>
+                                    <div style="font-size: 10px; color: #2dce7a; margin-top: 3px; font-weight: 700; text-transform: uppercase;">👁 Watch Topics</div>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <!-- AI SUMMARY CARD -->
+                    <div style="background: rgba(255, 107, 53, 0.03); border-left: 4px solid #ff6b35; border-radius: 0 6px 6px 0; padding: 15px 20px; margin-bottom: 30px; border-top: 1px solid #f2f2f7; border-right: 1px solid #f2f2f7; border-bottom: 1px solid #f2f2f7; page-break-inside: avoid; break-inside: avoid;">
+                        <h3 style="font-size: 11px; color: #ff6b35; font-weight: 700; margin: 0 0 6px 0; text-transform: uppercase; letter-spacing: 0.5px;">📋 AI Study Strategy Summary</h3>
+                        <p style="margin: 0; color: #1c1c27; font-size: 12.5px; line-height: 1.6; font-style: italic;">"${data.summary}"</p>
+                    </div>
+                    
+                    <!-- UNIT-WISE BREAKDOWN -->
+                    <h3 style="font-family: sans-serif; font-size: 15px; font-weight: 800; color: #0a0a0f; margin: 0 0 12px 0; page-break-inside: avoid; break-inside: avoid;">📦 Unit-Wise Breakdown — All 5 Units</h3>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; page-break-inside: avoid; break-inside: avoid;">
+                        <tr>
+                            ${(() => {
+                                const uws = data.unitWiseSummary || [];
+                                const impColor = {HIGH:'#ff4757',MEDIUM:'#ffaa00',LOW:'#2dce7a'};
+                                const impBg = {HIGH:'#fff0f1',MEDIUM:'#fff9e6',LOW:'#eafaf1'};
+                                let cells = '';
+                                for (let u = 1; u <= 5; u++) {
+                                    const unit = uws.find(x => x.unit === u) || {unit:u, name:'Unit '+u, topicCount:0, importance:'LOW', tip:'Cover basics'};
+                                    const hotCount = data.topics.filter(t => (t.unit||1) === u && t.importance === 'HOT').length;
+                                    cells += `<td style="width:20%; padding:6px; vertical-align:top;">
+                                        <div style="border:1px solid ${impColor[unit.importance]||'#e2e2eb'}; border-radius:6px; padding:10px 8px; text-align:center; background:${impBg[unit.importance]||'#f4f4f6'};">
+                                            <div style="font-size:16px; font-weight:800; color:${impColor[unit.importance]||'#8888a0'};">U${u}</div>
+                                            <div style="font-size:10px; font-weight:700; color:#0a0a0f; margin:4px 0;">${unit.name}</div>
+                                            <div style="font-size:9px; color:#8888a0;">${unit.topicCount} topics${hotCount > 0 ? ' · 🔥'+hotCount+' HOT' : ''}</div>
+                                            <div style="font-size:9px; color:${impColor[unit.importance]||'#8888a0'}; font-weight:700; margin-top:3px;">${unit.importance} Priority</div>
+                                        </div>
+                                    </td>`;
+                                }
+                                return cells;
+                            })()}
+                        </tr>
+                    </table>
+
+                    <!-- RANKED TOPICS TABLE -->
+                    <h3 style="font-family: sans-serif; font-size: 15px; font-weight: 800; color: #0a0a0f; margin: 0 0 12px 0; page-break-inside: avoid; break-inside: avoid;">🎯 Ranked Topics & Priority Study List</h3>
+                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 12px; margin-bottom: 35px;">
+                        <thead>
+                            <tr style="background: #0a0a0f; color: #ffffff;">
+                                <th style="padding: 12px 8px; border-radius: 4px 0 0 4px; width: 4%;">#</th>
+                                <th style="padding: 12px 8px; width: 30%;">Topic & Details</th>
+                                <th style="padding: 12px 6px; width: 7%; text-align: center;">Unit</th>
+                                <th style="padding: 12px 6px; width: 12%; text-align: center;">Importance</th>
+                                <th style="padding: 12px 6px; width: 10%; text-align: center;">Difficulty</th>
+                                <th style="padding: 12px 6px; width: 10%; text-align: center;">Est. Time</th>
+                                <th style="padding: 12px 8px; border-radius: 0 4px 4px 0; width: 22%;">Study Focus & Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.topics.map((t, idx) => {
+                    const impColors = {
+                        HOT: { bg: '#fff0f1', text: '#ff4757', border: '#ffa8b0' },
+                        LIKELY: { bg: '#fff9e6', text: '#ffaa00', border: '#ffe099' },
+                        WATCH: { bg: '#eafaf1', text: '#2dce7a', border: '#a3f0c3' }
+                    }[t.importance] || { bg: '#f4f4f6', text: '#8888a0', border: '#e2e2eb' };
+
+                    const diffColors = {
+                        Easy: { text: '#2dce7a', bg: '#eafaf1' },
+                        Medium: { text: '#ffaa00', bg: '#fff9e6' },
+                        Hard: { text: '#ff4757', bg: '#fff0f1' }
+                    }[t.difficulty || 'Medium'] || { text: '#ffaa00', bg: '#fff9e6' };
+
+                    const rowBg = idx % 2 === 0 ? '#ffffff' : '#f9f9fc';
+
+                    return `
+                                <tr style="background: ${rowBg}; border-bottom: 1px solid #e2e2eb; page-break-inside: avoid; break-inside: avoid;">
+                                    <td style="padding: 12px 10px; font-weight: 700; color: #0a0a0f; vertical-align: top;">${idx + 1}</td>
+                                    <td style="padding: 12px 10px; vertical-align: top;">
+                                        <div style="font-weight: 700; font-size: 13px; color: #0a0a0f; margin-bottom: 3px;">${t.topic}</div>
+                                        ${t.examples ? `<div style="font-size: 10px; color: #8888a0; font-style: italic; margin-top: 5px; line-height: 1.4;"><strong>Q:</strong> ${t.examples}</div>` : ''}
+                                    </td>
+                                    <td style="padding: 12px 6px; text-align: center; vertical-align: top;">
+                                        <span style="display: inline-block; padding: 3px 7px; border-radius: 4px; font-size: 10px; font-weight: 800; background: rgba(255,107,53,0.08); color: #ff6b35; border: 1px solid rgba(255,107,53,0.2);">
+                                            U${t.unit || '?'}
+                                        </span>
+                                    </td>
+                                    <td style="padding: 12px 10px; text-align: center; vertical-align: top;">
+                                        <span style="display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 9.5px; font-weight: 700; background: ${impColors.bg}; color: ${impColors.text}; border: 1px solid ${impColors.border}; text-transform: uppercase;">
+                                            ${t.importance}
+                                        </span>
+                                    </td>
+                                    <td style="padding: 12px 10px; text-align: center; vertical-align: top;">
+                                        <span style="display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 9.5px; font-weight: 700; background: ${diffColors.bg}; color: ${diffColors.text};">
+                                            ${t.difficulty || 'Medium'}
+                                        </span>
+                                    </td>
+                                    <td style="padding: 12px 10px; text-align: center; vertical-align: top; font-weight: 600; color: #1c1c27;">
+                                        ⏱️ ${t.timeEstimate || '2 hours'}
+                                    </td>
+                                    <td style="padding: 12px 10px; color: #555566; vertical-align: top; font-size: 11px; line-height: 1.4;">
+                                        ${t.reason}
+                                    </td>
+                                </tr>
+                                `;
+                }).join('')}
+                        </tbody>
+                    </table>
+                    
+                    <!-- FOOTER -->
+                    <table style="width: 100%; border-collapse: collapse; border-top: 1px dashed #e2e2eb; padding-top: 12px; margin-top: 25px; page-break-inside: avoid; break-inside: avoid;">
+                        <tr>
+                            <td style="text-align: center; font-size: 10px; color: #8888a0; padding-top: 10px;">
+                                PYQ Analyzer — Smart Exam Prep Report. Made with ❤️ to help students crack exams.
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                `;
+            });
+
+            htmlContent += `</div>`;
+
+            const finalFileName = type === 'current'
+                ? `PYQ_Analysis_${subjectsToInclude[0].name.replace(/\s+/g, '_') || 'Report'}.pdf`
+                : `PYQ_Analysis_All_Subjects_Report.pdf`;
+
+            const opt = {
+                margin: [10, 12, 10, 12],
+                filename: finalFileName,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, letterRendering: true, logging: false },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak: { mode: 'css' }
+            };
+
+            try {
+                await html2pdf().set(opt).from(htmlContent).save();
+                showToast('PDF report download complete! 🎉');
+            } catch (err) {
+                console.error(err);
+                showToast('⚠️ PDF creation fail ho gayi, simple TXT use karein.');
+            }
+        }
+
+        function downloadTXT() {
+            document.getElementById('pdf-menu').classList.add('hidden');
+            const currentSub = subjectsList.find(s => s.id === activeSubjectId);
+            if (!currentSub || !currentSub.analysisData) return;
+
+            const d = currentSub.analysisData;
+            let txt = `PYQ ANALYSIS REPORT\n${'='.repeat(50)}\nSubject: ${d._subject}\nExam: ${d._exam}\nYears Analyzed: ${d._years}\n\nSUMMARY\n${'-'.repeat(30)}\n${d.summary}\n\nIMPORTANT TOPICS\n${'-'.repeat(30)}\n`;
+            d.topics.forEach((t, i) => {
+                txt += `\n${i + 1}. [${t.importance}] [Unit U${t.unit || '?'}] ${t.topic}\n   Appeared: ${t.appeared}/4 years\n   Difficulty: ${t.difficulty || 'Medium'}\n   Est. Time: ${t.timeEstimate || '2 hours'}\n   ${t.reason}\n   Examples: ${t.examples || 'N/A'}\n`;
+            });
+            const blob = new Blob([txt], { type: 'text/plain' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+            a.download = `PYQ_Analysis_${d._subject || 'Report'}.txt`; a.click();
+        }
+
+        // SHARE FEATURE (BASE64 ENCRYPTION IN URL HASH)
+        function shareResults() {
+            try {
+                const shareData = subjectsList.map(s => ({
+                    name: s.name,
+                    exam: s.exam,
+                    analysisData: s.analysisData
+                })).filter(s => s.analysisData !== null);
+
+                if (shareData.length === 0) {
+                    showToast('Analysis complete hone ke baad hi share kar sakte hain!');
+                    return;
+                }
+
+                const json = JSON.stringify(shareData);
+                const base64 = btoa(unescape(encodeURIComponent(json)));
+                const shareUrl = window.location.origin + window.location.pathname + '#share=' + base64;
+
+                if (navigator.share) {
+                    navigator.share({
+                        title: 'PYQ Analysis Report',
+                        text: `Look at my exam analysis report for ${shareData[0].name}!`,
+                        url: shareUrl
+                    }).catch(() => {
+                        copyToClipboard(shareUrl);
+                    });
+                } else {
+                    copyToClipboard(shareUrl);
+                }
+            } catch (e) {
+                console.error(e);
+                showToast('Share failed. Please try again.');
+            }
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('🔗 Shareable Link copy ho gaya clipboard me! Friends ke saath share karein.');
+            }).catch(() => {
+                const dummy = document.createElement('input');
+                document.body.appendChild(dummy);
+                dummy.value = text;
+                dummy.select();
+                document.execCommand('copy');
+                document.body.removeChild(dummy);
+                showToast('🔗 Link copy ho gaya!');
+            });
+        }
+
+        function checkSharedLink() {
+            const hash = window.location.hash;
+            if (hash.startsWith('#share=')) {
+                try {
+                    const base64 = hash.substring(7);
+                    const json = decodeURIComponent(escape(atob(base64)));
+                    const sharedData = JSON.parse(json);
+
+                    if (Array.isArray(sharedData) && sharedData.length > 0) {
+                        subjectsList = sharedData.map((sub, idx) => ({
+                            id: idx + 1,
+                            name: sub.name,
+                            exam: sub.exam,
+                            inputMode: 'text',
+                            texts: ['', '', '', ''],
+                            pdfTexts: { 1: '', 2: '', 3: '', 4: '' },
+                            pdfNames: { 1: '', 2: '', 3: '', 4: '' },
+                            analysisData: sub.analysisData
+                        }));
+
+                        activeSubjectId = subjectsList[0].id;
+
+                        showSharedBanner();
+                        showResults(subjectsList[0].analysisData);
+                        renderResultSubjectTabs();
+                    }
+                } catch (e) {
+                    console.error('Shared report load error:', e);
+                    showToast('⚠️ Shared link corrupted ya invalid hai!');
+                }
+            }
+        }
+
+        function showSharedBanner() {
+            const banner = document.getElementById('shared-banner');
+            if (banner) banner.classList.remove('hidden');
+        }
+
+        function clearSharedReport() {
+            window.location.hash = '';
+            const banner = document.getElementById('shared-banner');
+            if (banner) banner.classList.add('hidden');
+            resetApp();
+        }
+
+        function showToast(msg) {
+            let t = document.getElementById('toast');
+            if (!t) {
+                t = document.createElement('div');
+                t.id = 'toast';
+                t.style.cssText = 'position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:#2dce7a;color:#000;padding:10px 20px;border-radius:8px;font-weight:600;font-size:14px;z-index:9999;opacity:0;transition:opacity 0.3s;box-shadow:0 8px 24px rgba(0,0,0,0.3);';
+                document.body.appendChild(t);
+            }
+            t.textContent = msg;
+            t.style.opacity = '1';
+            setTimeout(() => { t.style.opacity = '0'; }, 3000);
+        }
+
+        function loadDemo() {
+            document.getElementById('t1').value = `1. Explain OSI model layers with diagram\n2. Define mesh topology, calculate links for 10 nodes\n3. CRC: data=11010011, generator=x3+x+1\n4. Explain Stop and Wait protocol\n5. Distance Vector Routing with example\n6. Subnetting: 192.168.1.0/24 into 4 subnets\n7. TCP vs UDP comparison\n8. Explain DNS and FTP protocols`;
+            document.getElementById('t2').value = `1. OSI vs TCP/IP comparison\n2. Star and Ring topology differences\n3. CRC error detection method with example\n4. Go-Back-N and Selective Repeat\n5. Explain CSMA/CD with diagram\n6. Divide 200.1.2.0 into 5 subnets\n7. TCP header format and 3-way handshake\n8. RSA algorithm with example\n9. SMTP and HTTP protocols`;
+            document.getElementById('t3').value = `1. Describe all OSI layers with labeled diagram\n2. Differentiate topologies with diagram\n3. CRC code word generation for 10011101 using x3+1\n4. Go Back-N and Selective Repeat with real examples\n5. CSMA/CD vs CSMA/CA\n6. Congestion control mechanism\n7. IPv4 vs IPv6 differences\n8. Subnetting: 200.198.160.0 with mask 255.255.255.224\n9. Asymmetric cryptography + RSA for character F\n10. FTP, SMTP, DNS, ARP explanation`;
+            document.getElementById('t4').value = `1. TCP/IP model in detail\n2. Network topologies with features and pros-cons\n3. CRC algorithm sender+receiver both sides\n4. Random access protocols (ALOHA, CSMA)\n5. Distance vector routing, count-to-infinity problem\n6. IPv4 header format\n7. Token bucket algorithm and QoS\n8. TCP connection management, 3-way handshake\n9. RSA algorithm with example\n10. FTP vs HTTP comparison`;
+            document.getElementById('subject').value = 'Computer Networks';
+            document.getElementById('exam').value = 'AKTU';
+
+            const activeSub = subjectsList.find(s => s.id === activeSubjectId);
+            if (activeSub) {
+                activeSub.name = 'Computer Networks';
+                activeSub.exam = 'AKTU';
+                activeSub.texts = [
+                    document.getElementById('t1').value,
+                    document.getElementById('t2').value,
+                    document.getElementById('t3').value,
+                    document.getElementById('t4').value
+                ];
+            }
+
+            renderSubjectTabs();
+            showToast('Demo data load ho gaya! Ab Analyze karo.');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // FALLBACK: Pure JS analysis if API fails
+        function runLocalAnalysis(texts, subject, exam) {
+            const allText = texts.join(' ').toLowerCase();
+            const topicMap = [
+                { topic: 'OSI / TCP-IP Model', keys: ['osi', 'tcp/ip', 'tcp-ip', 'layers', 'model'], imp: 'HOT', difficulty: 'Easy', timeEstimate: '2 hours', unit: 1 },
+                { topic: 'CRC / Error Detection', keys: ['crc', 'cyclic redundancy', 'hamming', 'error detect', 'generator polynomial'], imp: 'HOT', difficulty: 'Medium', timeEstimate: '3 hours', unit: 2 },
+                { topic: 'IP Subnetting', keys: ['subnet', 'subnetting', 'cidr', 'ip address', '192.168', '200.1'], imp: 'HOT', difficulty: 'Hard', timeEstimate: '4 hours', unit: 3 },
+                { topic: 'Routing Algorithms (DVR/LSR)', keys: ['routing', 'distance vector', 'dvr', 'dijkstra', 'count to infinity', 'ospf', 'rip'], imp: 'HOT', difficulty: 'Hard', timeEstimate: '5 hours', unit: 3 },
+                { topic: 'TCP vs UDP / TCP Header', keys: ['tcp', 'udp', 'handshake', 'connection management', 'segment', 'three-way'], imp: 'HOT', difficulty: 'Medium', timeEstimate: '3 hours', unit: 4 },
+                { topic: 'Application Protocols (DNS/FTP/SMTP/HTTP)', keys: ['dns', 'ftp', 'smtp', 'http', 'application layer', 'imap', 'pop3'], imp: 'HOT', difficulty: 'Easy', timeEstimate: '2.5 hours', unit: 5 },
+                { topic: 'RSA / Cryptography', keys: ['rsa', 'cryptography', 'public key', 'asymmetric', 'encryption'], imp: 'HOT', difficulty: 'Hard', timeEstimate: '4 hours', unit: 5 },
+                { topic: 'Sliding Window (GBN/SR)', keys: ['go back', 'selective repeat', 'sliding window', 'gbn', 'stop and wait'], imp: 'LIKELY', difficulty: 'Medium', timeEstimate: '3 hours', unit: 2 },
+                { topic: 'CSMA/CD and MAC Protocols', keys: ['csma', 'mac', 'aloha', 'random access', 'collision'], imp: 'LIKELY', difficulty: 'Medium', timeEstimate: '2.5 hours', unit: 2 },
+                { topic: 'Congestion Control / QoS', keys: ['congestion', 'leaky bucket', 'token bucket', 'qos', 'traffic shaping'], imp: 'LIKELY', difficulty: 'Medium', timeEstimate: '2 hours', unit: 4 },
+                { topic: 'IPv4 vs IPv6', keys: ['ipv4', 'ipv6', 'internet protocol', 'header format'], imp: 'LIKELY', difficulty: 'Easy', timeEstimate: '1.5 hours', unit: 3 },
+                { topic: 'Network Topologies', keys: ['topology', 'mesh', 'bus', 'ring', 'star', 'tree'], imp: 'LIKELY', difficulty: 'Easy', timeEstimate: '1 hour', unit: 1 },
+                { topic: 'SNMP / Network Management', keys: ['snmp', 'network management', 'mib'], imp: 'LIKELY', difficulty: 'Medium', timeEstimate: '2.5 hours', unit: 5 },
+                { topic: 'Piggybacking / Flow Control', keys: ['piggybacking', 'flow control', 'rtt', 'round trip'], imp: 'WATCH', difficulty: 'Medium', timeEstimate: '2 hours', unit: 2 },
+                { topic: 'Propagation / Transmission Delay', keys: ['propagation delay', 'transmission delay', 'latency', 'bandwidth'], imp: 'WATCH', difficulty: 'Medium', timeEstimate: '2 hours', unit: 1 },
+            ];
+
+            const yearResults = texts.map(t => t.toLowerCase());
+            const topics = topicMap.map(tp => {
+                const yrs = yearResults.map(yt => tp.keys.some(k => yt.includes(k)) ? 1 : 0);
+                const appeared = yrs.reduce((a, b) => a + b, 0);
+                const finalImp = appeared >= 3 ? 'HOT' : appeared === 2 ? 'LIKELY' : appeared === 1 ? 'WATCH' : null;
+                if (!finalImp) return null;
+                return {
+                    topic: tp.topic,
+                    unit: tp.unit || 1,
+                    appeared,
+                    years: yrs,
+                    importance: finalImp,
+                    difficulty: tp.difficulty,
+                    timeEstimate: tp.timeEstimate,
+                    reason: appeared + ' saal mein aaya — ' + (finalImp === 'HOT' ? 'zaroor padhna!' : finalImp === 'LIKELY' ? 'bahut chance hai' : 'ek baar dekh lo'),
+                    examples: ''
+                };
+            }).filter(Boolean).sort((a, b) => b.appeared - a.appeared);
+
+            return {
+                totalQuestions: texts.reduce((s, t) => s + (t.match(/\d+\./g) || []).length, 0),
+                uniqueTopics: topics.length,
+                hotCount: topics.filter(t => t.importance === 'HOT').length,
+                likelyCount: topics.filter(t => t.importance === 'LIKELY').length,
+                summary: subject + ' ke liye local analysis complete hua. HOT topics zaroor padhna — ye har saal aate hain. Gemini AI ke liye internet connection check karo.',
+                quickActions: ['HOT topics pehle padhna', 'Numericals practice karo', 'Short notes banao'],
+                topics
+            };
+        }
+
+
+    </script>
+</body>
+
+</html>
