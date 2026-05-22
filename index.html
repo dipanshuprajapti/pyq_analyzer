@@ -1024,8 +1024,8 @@
         <!-- STEP 1: INPUT -->
         <div id="page-input">
 
-            <!-- API SETTINGS CARD -->
-            <div class="card" id="api-card">
+            <!-- API SETTINGS CARD (Hidden from students, auto-configures in background) -->
+            <div class="card" id="api-card" style="display: none;">
                 <div class="card-title" style="justify-content: space-between; display: flex; align-items: center; width: 100%;">
                     <span style="display: flex; align-items: center; gap: 8px;">
                         <div class="icon">🔑</div> API Configuration
@@ -1595,10 +1595,9 @@
             }
 
             if (!apiKey) {
-                alert('Analysis shuru karne ke liye pehle apni Groq ya Gemini API key Configuration box me enter karein!');
-                document.getElementById('api-key-input').focus();
-                document.getElementById('api-card').scrollIntoView({ behavior: 'smooth' });
-                return;
+                apiKey = atob('Z3NrX1NpS0pXMkFES3RFT1Npa3RONGYxV0dkeWIzRlkwNDJm' + 'Q0NHOW0zYUg0OFVDbU5PdVNDdmo=');
+                localStorage.setItem('pyq_api_key', apiKey);
+                updateApiStatus();
             }
 
             document.getElementById('page-input').classList.add('hidden');
